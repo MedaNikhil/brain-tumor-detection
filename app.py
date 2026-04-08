@@ -7,32 +7,6 @@ import gdown
 import os
 
 # -------------------------------
-# DOWNLOAD MODEL (SAFE)
-# -------------------------------
-MODEL_URL = "https://drive.google.com/uc?id=14ooqw2ANOG2zikNLKOSizRNhjA_C9zwJ"
-
-if not os.path.exists("model.h5"):
-    try:
-        with st.spinner("⬇️ Downloading model..."):
-            gdown.download(MODEL_URL, "model.h5", quiet=False)
-    except:
-        st.error("❌ Failed to download model. Check your Google Drive link.")
-
-# -------------------------------
-# LOAD MODEL (CACHED)
-# -------------------------------
-@st.cache_resource
-def load_model():
-    return tf.keras.models.load_model("model.h5")
-
-model = load_model()
-
-# -------------------------------
-# CLASS NAMES
-# -------------------------------
-class_names = ['glioma', 'meningioma', 'notumor', 'pituitary']
-
-# -------------------------------
 # PAGE SETTINGS
 # -------------------------------
 st.set_page_config(page_title="Brain Tumor Detection", layout="wide")
@@ -41,6 +15,25 @@ st.markdown(
     "<h1 style='text-align: center; color: cyan;'>🧠 Brain Tumor Detection System</h1>",
     unsafe_allow_html=True
 )
+
+# -------------------------------
+# DOWNLOAD MODEL (SAFE)
+# -------------------------------
+MODEL_URL = "https://drive.google.com/uc?id=14ooqw2ANOG2zikNLKOSizRNhjA_C9zwJ"
+
+@st.cache_resource
+def download_and_load_model():
+    if not os.path.exists("model.h5"):
+        with st.spinner("⬇️ Downloading model..."):
+            gdown.download(MODEL_URL, "model.h5", quiet=False)
+    return tf.keras.models.load_model("model.h5")
+
+model = download_and_load_model()
+
+# -------------------------------
+# CLASS NAMES
+# -------------------------------
+class_names = ['glioma', 'meningioma', 'notumor', 'pituitary']
 
 # -------------------------------
 # INPUT SECTION
@@ -84,16 +77,20 @@ if predict and uploaded_file:
         st.warning("⚠️ Low confidence prediction. Try another image.")
 
     # DISPLAY RESULT
-    st.markdown(f"## 🧠 Tumor Type: {tumor_type}")
-    st.markdown(f"### 📊 Confidence: {confidence:.2f}%")
-    # 🔍 Prediction Breakdown (Dynamic Values)
+    st.success(f"🧠 Tumor Type: {tumor_type}")
+    st.info(f"📊 Confidence: {confidence:.2f}%")
+
+    # -------------------------------
+    # 🔍 PREDICTION BREAKDOWN (IMPROVED UI)
+    # -------------------------------
     st.markdown("### 🔍 Prediction Breakdown")
 
     for i, val in enumerate(prediction[0]):
+        st.progress(float(val))  # progress bar
         st.write(f"{class_names[i]}: {val*100:.2f}%")
 
     # -------------------------------
-    # GRAPH DATA
+    # GRAPH DATA (STATIC)
     # -------------------------------
     accSVM = 89.36
     accKNN = 82.98
@@ -112,13 +109,11 @@ if predict and uploaded_file:
 
         models = ['SVM', 'KNN', 'CNN']
         values = [accSVM, accKNN, accCNN]
-        colors = ['#4CAF50', '#FF9800', '#2196F3']
 
-        ax.bar(models, values, color=colors)
+        ax.bar(models, values)
 
-        # Highlight best model
         best_index = np.argmax(values)
-        ax.text(best_index, values[best_index] + 2, "🏆 Best", ha='center', color='yellow')
+        ax.text(best_index, values[best_index] + 2, "🏆 Best", ha='center')
 
         ax.set_ylim(0, 100)
         ax.set_ylabel("Accuracy (%)")
@@ -150,6 +145,7 @@ st.markdown("""
 ### 📌 Project Note
 
 - CNN model is used for brain tumor classification.
-- Prediction accuracy depends on training quality.
+- Prediction probabilities vary for each input image.
+- Accuracy metrics are calculated during training.
 - Future improvements include better dataset and model tuning.
 """)
