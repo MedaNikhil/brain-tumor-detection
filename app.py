@@ -86,6 +86,11 @@ if predict and uploaded_file:
     # DISPLAY RESULT
     st.markdown(f"## 🧠 Tumor Type: {tumor_type}")
     st.markdown(f"### 📊 Confidence: {confidence:.2f}%")
+    # 🔍 Prediction Breakdown (Dynamic Values)
+    st.markdown("### 🔍 Prediction Breakdown")
+
+    for i, val in enumerate(prediction[0]):
+        st.write(f"{class_names[i]}: {val*100:.2f}%")
 
     # -------------------------------
     # GRAPH DATA
